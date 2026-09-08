@@ -32,6 +32,7 @@ urlpatterns = [
 
     # Login
     path('login/', LoginView.as_view(), name='login'),
+    
 
     # Redirecionamento pós-login do Google (gera o JWT e manda pro front)
     path('social-redirect/', google_login_redirect, name='social_redirect'),

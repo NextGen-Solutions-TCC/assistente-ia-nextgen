@@ -134,6 +134,10 @@ h2 span {
   display: block;
 }
 
+.error-message-inline.geral.sucesso {
+  color: #1f8a3b;
+}
+
 .input-error-wrapper input {
   border: 1px solid #bd2a2a !important;
   background-color: rgba(189, 42, 42, 0.04) !important;

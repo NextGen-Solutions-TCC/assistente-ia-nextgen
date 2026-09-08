@@ -5,7 +5,7 @@ from urllib.request import urlopen
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = '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' # retirar depois
+SECRET_KEY = 'SUA_NOVA_SECRET_KEY'
 
 DEBUG = True
 
@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'Api',
-    "corsheaders",
+    'corsheaders',
     'rest_framework_simplejwt',
     'django_filters',
     'django.contrib.messages',
@@ -84,8 +84,8 @@ LOGGING = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 MIDDLEWARE = [
@@ -134,10 +134,26 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'MinimumLengthValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'CommonPasswordValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'NumericPasswordValidator',
+    },
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -148,14 +164,28 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST_USER = 'seu_email_do_projeto@gmail.com'
-EMAIL_HOST_PASSWORD = 'aquela_senha_de_16_letras_que_o_google_gera'
-DEFAULT_FROM_EMAIL = 'GenIA <seu_email_do_projeto@gmail.com>'
+# ============================================================
+# E-MAIL - GMAIL
+# ============================================================
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'gajuragenia@gmail.com'
+EMAIL_HOST_PASSWORD = 'acwn elqb ycjf xpkw'
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ============================================================
+# GOOGLE / ALLAUTH
+# ============================================================
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -165,16 +195,25 @@ SOCIALACCOUNT_ADAPTER = 'Api.adapters.CustomSocialAccountAdapter'
 # Força o login direto sem passar por telas de confirmação adicionais
 SOCIALACCOUNT_FORCE_SIGNUP = False
 
-# Garante que o Django use o e-mail do Google para encontrar um usuário existente
+# Garante que o Django use o e-mail do Google
+# para encontrar um usuário existente
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True #Arrumar email duplicado
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-ACCOUNT_EMAIL_REQUIRED = True
+# ============================================================
+# CONFIGURAÇÃO DE CONTA
+# ============================================================
 
-# Após o Google confirmar o login, cai nessa view (gera o JWT e só então manda pro front)
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+
+# ============================================================
+# REDIRECIONAMENTOS
+# ============================================================
+
+# Após o Google confirmar o login, cai nessa view
+# (gera o JWT e só então manda para o frontend)
 LOGIN_REDIRECT_URL = 'http://127.0.0.1:8000/Api/social-redirect/'
+
 LOGOUT_REDIRECT_URL = 'http://localhost:5173/'

@@ -22,6 +22,12 @@ from urllib.parse import urlencode
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 
+from django.core import signing
+from allauth.account.models import EmailAddress, EmailConfirmationHMAC
+from allauth.account import app_settings as allauth_account_settings
+
+FRONTEND_URL = "http://localhost:5173"
+
 @receiver(user_logged_in)
 def sinal_login_sucesso(sender, request, user, **kwargs):
     # Essa linha vai imprimir no terminal do VS Code sempre que alguém logar
@@ -54,6 +60,7 @@ class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automati
  
     filter_backends = [DjangoFilterBackend]
     filterset_class = UsuarioFilter
+    
  
     def get_queryset(self): # def get_queryset(self) é um método que pode ser sobrescrito para personalizar a queryset retornada pelo viewset. No caso do usuário, queremos retornar apenas os dados do usuário logado, a menos que o usuário seja um superusuário (staff), nesse caso, ele pode ver todos os usuários.
         qs = super().get_queryset() # chama o método get_queryset() da classe pai (ModelViewSet) para obter a queryset padrão, que é definida como Usuario.objects.all(). Em seguida, verificamos se o usuário logado é um superusuário (staff). Se for, retornamos a queryset completa, permitindo que ele veja todos os usuários. Caso contrário, filtramos a queryset para retornar apenas o usuário logado, usando qs.filter(user=self.request.user). Isso garante que um usuário comum só possa acessar seus próprios dados, enquanto um superusuário pode acessar os dados de todos os usuários.
@@ -203,7 +210,7 @@ class RegisterView(APIView):
 
     def post(self, request):
 
-        serializer = RegisterSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data, context={'request': request})
 
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -313,20 +320,32 @@ class ModeloIAViewSet(ModelViewSet):
     
 
 class LoginView(APIView):
- 
-    permission_classes = [AllowAny] # Permite que qualquer pessoa acesse a rota de login, mesmo sem estar autenticada. Isso é necessário porque o login é a porta de entrada para obter o token JWT, e se colocássemos IsAuthenticated aqui, ninguém conseguiria logar, já que não teriam um token válido ainda.
- 
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
- 
+
         email = request.data.get("email")
         password = request.data.get("password")
- 
+
         user = authenticate(
             username=email,
             password=password
         )
- 
+
         if user is not None:
+
+            email_verificado = EmailAddress.objects.filter(
+                user=user,
+                email__iexact=user.email,
+                verified=True
+            ).exists()
+
+            if not email_verificado:
+                return Response({
+                    "success": False,
+                    "message": "Confirme seu email antes de fazer login."
+                }, status=403)
 
             refresh = RefreshToken.for_user(user)
 
@@ -340,12 +359,11 @@ class LoginView(APIView):
                 "nome": nome,
                 "message": "Login realizado com sucesso"
             })
- 
+
         return Response({
             "success": False,
             "message": "Email ou senha inválidos"
         }, status=400)
-
 
 @login_required
 def google_login_redirect(request):
@@ -380,6 +398,35 @@ def google_login_redirect(request):
         import logging
         logging.getLogger("Api").exception("Falha ao concluir login via Google")
         return redirect("http://localhost:5173/login?erro=google_login_falhou")
+
+
+def confirmar_email(request, key):
+    """
+    Substitui a tela padrão (e feia) do allauth para confirmação de e-mail.
+    Confirma o e-mail nos bastidores e redireciona direto para o React,
+    que decide o que mostrar com base no parâmetro `email_confirmado`.
+    """
+    confirmation = EmailConfirmationHMAC.from_key(key)
+
+    if confirmation:
+        confirmation.confirm(request)
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=1")
+
+    # Se a key não bate mais com um EmailAddress "verified=False", pode ser
+    # porque já foi confirmada antes (link clicado de novo) ou porque expirou/é inválida.
+    try:
+        max_age = 60 * 60 * 24 * allauth_account_settings.EMAIL_CONFIRMATION_EXPIRE_DAYS
+        pk = signing.loads(key, max_age=max_age, salt=allauth_account_settings.SALT)
+        email_address = EmailAddress.objects.filter(pk=pk).first()
+    except signing.SignatureExpired:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=expirado")
+    except signing.BadSignature:
+        email_address = None
+
+    if email_address and email_address.verified:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=ja_confirmado")
+
+    return redirect(f"{FRONTEND_URL}/login?email_confirmado=invalido")
 
 
 @api_view(['GET'])

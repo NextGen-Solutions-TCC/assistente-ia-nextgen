@@ -1,10 +1,13 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 
-from .models import Usuario, Conversa, Mensagem, ModeloIA
+from rest_framework import serializers
+
+from allauth.account.models import EmailAddress
+
+from .models import Conversa, Mensagem, ModeloIA, Usuario
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -18,8 +21,19 @@ class PerfilSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'nome', 'email', 'tipo', 'data_criacao']
-        read_only_fields = ['id', 'email', 'tipo', 'data_criacao']
+        fields = [
+            'id',
+            'nome',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
+        read_only_fields = [
+            'id',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -36,7 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email',
             'password',
             'confirmar_password',
-            'nome'
+            'nome',
         ]
 
     def validate_email(self, value):
@@ -53,7 +67,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         try:
             validate_password(value)
         except DjangoValidationError as exc:
-            raise serializers.ValidationError(list(exc.messages))
+            raise serializers.ValidationError(
+                list(exc.messages)
+            )
 
         return value
 
@@ -77,6 +93,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         try:
             with transaction.atomic():
+
                 user = User.objects.create_user(
                     username=username,
                     email=email,
@@ -88,9 +105,23 @@ class RegisterSerializer(serializers.ModelSerializer):
                     nome=nome,
                     email=email
                 )
+
+                email_address = EmailAddress.objects.create(
+                    user=user,
+                    email=email,
+                    primary=True,
+                    verified=False
+                )
+
+                request = self.context.get('request')
+                transaction.on_commit(
+                    lambda: email_address.send_confirmation(request, signup=True)
+                )
+
         except IntegrityError:
             raise serializers.ValidationError(
-                "Não foi possível criar o usuário. Nome de usuário ou email já em uso."
+                "Não foi possível criar o usuário. "
+                "Nome de usuário ou email já em uso."
             )
 
         return usuario
@@ -116,4 +147,3 @@ class MensagemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mensagem
         fields = '__all__'
-    

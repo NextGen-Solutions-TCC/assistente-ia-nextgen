@@ -101,8 +101,8 @@ function Cadastro() {
       const data = await response.json();
 
       if (response.ok) {
-        // Redireciona de forma limpa sem alert em tela
-        navigate("/login");
+        // Redireciona para o login avisando para verificar o e-mail de confirmação
+        navigate("/login?cadastro=sucesso");
       } else {
         // Mapeia erros vindos diretamente do banco de dados (Django Rest Framework)
         if (data.username) setErrorName("Nome de usuário inválido ou já existente.");
