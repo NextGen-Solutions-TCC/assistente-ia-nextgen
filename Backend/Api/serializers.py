@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError, transaction
+
+from allauth.account.models import EmailAddress
 
 from .models import Usuario, Conversa, Mensagem, ModeloIA
 
@@ -25,7 +28,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             'username',
             'email',
             'password',
-            'confirmar_password'
+            'confirmar_password',
+            'nome',
         ]
 
     def validate_email(self, value):
@@ -59,18 +63,40 @@ class RegisterSerializer(serializers.ModelSerializer):
         username = validated_data.pop('username')
         email = validated_data.pop('email')
         password = validated_data.pop('password')
+        nome = validated_data.pop('nome', username)
 
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
+        try:
+            with transaction.atomic():
 
-        usuario = Usuario.objects.create(
-            user=user,
-            nome=username,
-            email=email
-        )
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password
+                )
+
+                usuario = Usuario.objects.create(
+                    user=user,
+                    nome=nome,
+                    email=email
+                )
+
+                email_address = EmailAddress.objects.create(
+                    user=user,
+                    email=email,
+                    primary=True,
+                    verified=False
+                )
+
+                request = self.context.get('request')
+                transaction.on_commit(
+                    lambda: email_address.send_confirmation(request, signup=True)
+                )
+
+        except IntegrityError:
+            raise serializers.ValidationError(
+                "Não foi possível criar o usuário. "
+                "Nome de usuário ou email já em uso."
+            )
 
         return usuario
 

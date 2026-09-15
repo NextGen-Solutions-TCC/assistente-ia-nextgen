@@ -114,10 +114,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST_USER = 'seu_email_do_projeto@gmail.com'
-EMAIL_HOST_PASSWORD = 'aquela_senha_de_16_letras_que_o_google_gera'
-DEFAULT_FROM_EMAIL = 'GenIA <seu_email_do_projeto@gmail.com>'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'gajuragenia@gmail.com'
+EMAIL_HOST_PASSWORD = 'acwn elqb ycjf xpkw'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -130,7 +133,7 @@ SOCIALACCOUNT_FORCE_SIGNUP = False
 # Garante que o Django use o e-mail do Google para encontrar um usuário existente
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True #Arrumar email duplicado
 ACCOUNT_USERNAME_REQUIRED = False

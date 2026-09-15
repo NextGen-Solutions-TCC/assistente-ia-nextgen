@@ -10,13 +10,19 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import JsonResponse 
+from django.http import JsonResponse
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
+
+from django.core import signing
+from allauth.account.models import EmailAddress, EmailConfirmationHMAC
+from allauth.account import app_settings as allauth_account_settings
+
+FRONTEND_URL = "http://localhost:5173"
 
 @receiver(user_logged_in)
 def sinal_login_sucesso(sender, request, user, **kwargs):
@@ -98,7 +104,7 @@ class RegisterView(APIView):
 
     def post(self, request):
 
-        serializer = RegisterSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data, context={'request': request})
 
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -218,21 +224,62 @@ class LoginView(APIView):
         )
  
         if user is not None:
- 
+
+            email_verificado = EmailAddress.objects.filter(
+                user=user,
+                email__iexact=user.email,
+                verified=True
+            ).exists()
+
+            if not email_verificado:
+                return Response({
+                    "success": False,
+                    "message": "Confirme seu email antes de fazer login."
+                }, status=403)
+
             refresh = RefreshToken.for_user(user)
- 
+
             return Response({
                 "success": True,
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
                 "message": "Login realizado com sucesso"
             })
- 
+
         return Response({
             "success": False,
             "message": "Email ou senha inválidos"
         }, status=400)
-    
+
+
+def confirmar_email(request, key):
+    """
+    Substitui a tela padrão (e feia) do allauth para confirmação de e-mail.
+    Confirma o e-mail nos bastidores e redireciona direto para o React,
+    que decide o que mostrar com base no parâmetro `email_confirmado`.
+    """
+    confirmation = EmailConfirmationHMAC.from_key(key)
+
+    if confirmation:
+        confirmation.confirm(request)
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=1")
+
+    # Se a key não bate mais com um EmailAddress "verified=False", pode ser
+    # porque já foi confirmada antes (link clicado de novo) ou porque expirou/é inválida.
+    try:
+        max_age = 60 * 60 * 24 * allauth_account_settings.EMAIL_CONFIRMATION_EXPIRE_DAYS
+        pk = signing.loads(key, max_age=max_age, salt=allauth_account_settings.SALT)
+        email_address = EmailAddress.objects.filter(pk=pk).first()
+    except signing.SignatureExpired:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=expirado")
+    except signing.BadSignature:
+        email_address = None
+
+    if email_address and email_address.verified:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=ja_confirmado")
+
+    return redirect(f"{FRONTEND_URL}/login?email_confirmado=invalido")
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) # Exige o Token JWT enviado pelo React

@@ -1,6 +1,6 @@
 import "./Login.css";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 
 import robot from "../assets/robot.svg";
@@ -9,14 +9,33 @@ import Card from "../components/Card";
 import Input from "../components/Input";
 import Button from "../components/Button";
 
+const MENSAGENS_CONFIRMACAO_EMAIL = {
+  "1": { tipo: "sucesso", texto: "E-mail confirmado com sucesso! Já pode entrar." },
+  ja_confirmado: { tipo: "sucesso", texto: "Esse e-mail já tinha sido confirmado. Pode entrar normalmente." },
+  expirado: { tipo: "erro", texto: "Esse link de confirmação expirou. Cadastre-se novamente ou peça um novo e-mail." },
+  invalido: { tipo: "erro", texto: "Esse link de confirmação é inválido." },
+};
+
+const MENSAGENS_CADASTRO = {
+  sucesso: {
+    tipo: "sucesso",
+    texto: "Cadastro realizado! Enviamos um e-mail de confirmação para o seu Gmail — verifique a caixa de entrada (e o spam) antes de entrar.",
+  },
+};
+
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [errorEmail, setErrorEmail] = useState("");
   const [errorPassword, setErrorPassword] = useState("");
   const [errorGeral, setErrorGeral] = useState("");
+
+  const avisoConfirmacao =
+    MENSAGENS_CONFIRMACAO_EMAIL[searchParams.get("email_confirmado")] ||
+    MENSAGENS_CADASTRO[searchParams.get("cadastro")];
 
   const validarEmail = (emailStr) => {
     return /\S+@\S+\.\S+/.test(emailStr);
@@ -91,6 +110,12 @@ function Login() {
       <Card>
         <img src={robot} alt="robot" className="icon" />
         <h2>Bem vindo ao <span>LOGIN</span></h2>
+
+        {avisoConfirmacao && (
+          <span className={`error-message-inline geral ${avisoConfirmacao.tipo === "sucesso" ? "sucesso" : ""}`}>
+            {avisoConfirmacao.texto}
+          </span>
+        )}
 
         {errorGeral && <span className="error-message-inline geral">{errorGeral}</span>}
 
