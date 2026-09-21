@@ -1,3 +1,8 @@
+# Variáveis de ambiente / segredos
+.env
+.env.*
+!.env.example
+
 # Sistema operacional
 .DS_Store
 

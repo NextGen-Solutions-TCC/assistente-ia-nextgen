@@ -12,7 +12,8 @@ from .views import (
     ConversaViewSet,
     ModeloIAViewSet,
     teste,
-    LoginView
+    LoginView,
+    google_login_redirect
 )
 
 # Router principal
@@ -31,6 +32,10 @@ urlpatterns = [
 
     # Login
     path('login/', LoginView.as_view(), name='login'),
+    
+
+    # Redirecionamento pós-login do Google (gera o JWT e manda pro front)
+    path('social-redirect/', google_login_redirect, name='social_redirect'),
 
     # Registro
     path('auth/register/', RegisterView.as_view()),  

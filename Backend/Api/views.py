@@ -12,7 +12,11 @@ from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
 from django.contrib.auth import authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
+from urllib.parse import urlencode
 
 
 from django.contrib.auth.signals import user_logged_in
@@ -49,7 +53,6 @@ def teste(request):
 
 
 
-
 class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automaticamente, não precisa criar uma view para cada ação
     queryset = Usuario.objects.all()# define a queryset para o viewset, ou seja, os dados que serão retornados quando uma requisição for feita para a rota do usuário. O queryset é uma forma de filtrar os dados que serão retornados, por exemplo, para retornar apenas os usuários ativos ou para retornar apenas os usuários com um determinado tipo.
     serializer_class = UsuarioSerializer
@@ -57,6 +60,7 @@ class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automati
  
     filter_backends = [DjangoFilterBackend]
     filterset_class = UsuarioFilter
+    
  
     def get_queryset(self): # def get_queryset(self) é um método que pode ser sobrescrito para personalizar a queryset retornada pelo viewset. No caso do usuário, queremos retornar apenas os dados do usuário logado, a menos que o usuário seja um superusuário (staff), nesse caso, ele pode ver todos os usuários.
         qs = super().get_queryset() # chama o método get_queryset() da classe pai (ModelViewSet) para obter a queryset padrão, que é definida como Usuario.objects.all(). Em seguida, verificamos se o usuário logado é um superusuário (staff). Se for, retornamos a queryset completa, permitindo que ele veja todos os usuários. Caso contrário, filtramos a queryset para retornar apenas o usuário logado, usando qs.filter(user=self.request.user). Isso garante que um usuário comum só possa acessar seus próprios dados, enquanto um superusuário pode acessar os dados de todos os usuários.
@@ -68,12 +72,12 @@ class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automati
    
     def get_serializer_class(self):
         if self.action == "me":
-            return UsuarioSerializer
+            return PerfilSerializer
         return super().get_serializer_class()
-   
+
     @action(
         detail=False,
-        methods=['get'],
+        methods=['get', 'patch'],
         url_path="me",
         permission_classes=[IsAuthenticated]
     )
@@ -81,10 +85,112 @@ class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automati
         usuario = Usuario.objects.filter(user=request.user).first()
         if not usuario:
             return Response({"detail":"Perfil de usuário não encontrado."}, status=404)
-       
+
+        if request.method == 'PATCH':
+            serializer = self.get_serializer(usuario, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
         serializer = self.get_serializer(usuario)
         return Response(serializer.data)
-   
+
+    @action(
+        detail=False,
+        methods=['post'],
+        url_path="alterar-senha",
+        permission_classes=[IsAuthenticated]
+    )
+    def alterar_senha(self, request):
+        senha_atual = request.data.get('senha_atual')
+        nova_senha = request.data.get('nova_senha')
+        confirmar_senha = request.data.get('confirmar_senha')
+
+        if not request.user.check_password(senha_atual or ''):
+            return Response({"detail": "Senha atual incorreta."}, status=400)
+
+        if not nova_senha or nova_senha != confirmar_senha:
+            return Response({"detail": "As novas senhas não coincidem."}, status=400)
+
+        try:
+            validate_password(nova_senha, user=request.user)
+        except DjangoValidationError as exc:
+            return Response({"detail": list(exc.messages)}, status=400)
+
+        request.user.set_password(nova_senha)
+        request.user.save()
+
+        return Response({"detail": "Senha alterada com sucesso."})
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path="exportar-dados",
+        permission_classes=[IsAuthenticated]
+    )
+    def exportar_dados(self, request):
+        usuario = Usuario.objects.filter(user=request.user).first()
+        if not usuario:
+            return Response({"detail": "Perfil de usuário não encontrado."}, status=404)
+
+        conversas = Conversa.objects.filter(usuario=usuario)
+
+        dados = {
+            "perfil": {
+                "nome": usuario.nome,
+                "email": usuario.email,
+                "data_criacao": usuario.data_criacao,
+            },
+            "conversas": [
+                {
+                    "id": conversa.id,
+                    "titulo": conversa.titulo,
+                    "mensagens": [
+                        {
+                            "remetente": mensagem.remetente,
+                            "texto": mensagem.texto,
+                            "data_envio": mensagem.data_envio,
+                        }
+                        for mensagem in conversa.mensagem_set.all()
+                    ],
+                }
+                for conversa in conversas
+            ],
+        }
+
+        response = JsonResponse(dados)
+        response["Content-Disposition"] = 'attachment; filename="meus_dados.json"'
+        return response
+
+    @action(
+        detail=False,
+        methods=['delete'],
+        url_path="apagar-conversas",
+        permission_classes=[IsAuthenticated]
+    )
+    def apagar_conversas(self, request):
+        usuario = Usuario.objects.filter(user=request.user).first()
+        if not usuario:
+            return Response({"detail": "Perfil de usuário não encontrado."}, status=404)
+
+        quantidade, _ = Conversa.objects.filter(usuario=usuario).delete()
+        return Response({"detail": "Conversas apagadas com sucesso.", "quantidade": quantidade})
+
+    @action(
+        detail=False,
+        methods=['delete'],
+        url_path="excluir-conta",
+        permission_classes=[IsAuthenticated]
+    )
+    def excluir_conta(self, request):
+        senha = request.data.get('senha')
+
+        if not senha or not request.user.check_password(senha):
+            return Response({"detail": "Senha incorreta."}, status=400)
+
+        request.user.delete()
+        return Response({"detail": "Conta excluída com sucesso."})
+
     @action(
         detail=False,
         methods=['get'],
@@ -176,9 +282,13 @@ class ConversaViewSet(ModelViewSet):
         return qs.filter(usuario__user=self.request.user)
 
     def perform_create(self, serializer):
-    
+
         # Busca o perfil do usuário logado
         usuario_perfil = Usuario.objects.filter(user=self.request.user).first()
+        if not usuario_perfil:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Perfil de usuário não encontrado para o usuário autenticado.")
+
         serializer.save(usuario=usuario_perfil)
 
 
@@ -210,19 +320,19 @@ class ModeloIAViewSet(ModelViewSet):
     
 
 class LoginView(APIView):
- 
+
     permission_classes = [AllowAny]
- 
+
     def post(self, request):
- 
+
         email = request.data.get("email")
         password = request.data.get("password")
- 
+
         user = authenticate(
             username=email,
             password=password
         )
- 
+
         if user is not None:
 
             email_verificado = EmailAddress.objects.filter(
@@ -239,10 +349,14 @@ class LoginView(APIView):
 
             refresh = RefreshToken.for_user(user)
 
+            usuario = Usuario.objects.filter(user=user).first()
+            nome = usuario.nome if usuario else user.username
+
             return Response({
                 "success": True,
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
+                "nome": nome,
                 "message": "Login realizado com sucesso"
             })
 
@@ -250,6 +364,40 @@ class LoginView(APIView):
             "success": False,
             "message": "Email ou senha inválidos"
         }, status=400)
+
+@login_required
+def google_login_redirect(request):
+    """
+    Chamada pelo django-allauth logo após o Google confirmar o login
+    (autenticação por sessão). Aqui geramos o JWT do usuário e mandamos
+    ele de volta pro front já com os dados na URL, do mesmo jeito que
+    o LoginView normal devolve no corpo da resposta.
+    """
+    try:
+        user = request.user
+
+        usuario, _ = Usuario.objects.get_or_create(
+            user=user,
+            defaults={
+                'nome': f"{user.first_name} {user.last_name}".strip() or user.email,
+                'email': user.email,
+                'senha': '',
+            }
+        )
+
+        refresh = RefreshToken.for_user(user)
+
+        params = urlencode({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "nome": usuario.nome,
+        })
+
+        return redirect(f"http://localhost:5173/chat?{params}")
+    except Exception:
+        import logging
+        logging.getLogger("Api").exception("Falha ao concluir login via Google")
+        return redirect("http://localhost:5173/login?erro=google_login_falhou")
 
 
 def confirmar_email(request, key):

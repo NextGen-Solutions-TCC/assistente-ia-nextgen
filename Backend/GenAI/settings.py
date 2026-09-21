@@ -1,11 +1,16 @@
 from pathlib import Path
 from datetime import timedelta
 import json
+import os
 from urllib.request import urlopen
+
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-^$#b-yihdqq%p_rnjro@+s_&q=6#w$f6@88d#7x++(_=$yb%bw' # retirar depois
+load_dotenv(BASE_DIR / '.env')
+
+SECRET_KEY = 'SUA_NOVA_SECRET_KEY'
 
 DEBUG = True
 
@@ -24,7 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'Api',
-    "corsheaders",
+    'corsheaders',
     'rest_framework_simplejwt',
     'django_filters',
     'django.contrib.messages',
@@ -39,6 +44,10 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
+REST_AUTH = {
+    'PASSWORD_RESET_SERIALIZER': 'Api.serializers.CustomPasswordResetSerializer',
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -47,11 +56,45 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
+    'EXCEPTION_HANDLER': 'Api.exception_handler.custom_exception_handler',
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'Api': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 MIDDLEWARE = [
@@ -90,16 +133,36 @@ WSGI_APPLICATION = 'GenAI.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'genia',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'MinimumLengthValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'CommonPasswordValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'NumericPasswordValidator',
+    },
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -110,17 +173,24 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'gajuragenia@gmail.com'
-EMAIL_HOST_PASSWORD = 'acwn elqb ycjf xpkw'
+
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -130,14 +200,25 @@ SOCIALACCOUNT_ADAPTER = 'Api.adapters.CustomSocialAccountAdapter'
 # Força o login direto sem passar por telas de confirmação adicionais
 SOCIALACCOUNT_FORCE_SIGNUP = False
 
-# Garante que o Django use o e-mail do Google para encontrar um usuário existente
+# Garante que o Django use o e-mail do Google
+# para encontrar um usuário existente
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+
+# ============================================================
+# CONFIGURAÇÃO DE CONTA
+# ============================================================
 
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True #Arrumar email duplicado
+ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 
-# Onde o usuário vai cair após fazer login com sucesso
-LOGIN_REDIRECT_URL = 'http://localhost:5173/Chatgeral'
+# ============================================================
+# REDIRECIONAMENTOS
+# ============================================================
+
+# Após o Google confirmar o login, cai nessa view
+# (gera o JWT e só então manda para o frontend)
+LOGIN_REDIRECT_URL = 'http://127.0.0.1:8000/Api/social-redirect/'
+
 LOGOUT_REDIRECT_URL = 'http://localhost:5173/'

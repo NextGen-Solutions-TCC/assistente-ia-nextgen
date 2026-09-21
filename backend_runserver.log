@@ -1,0 +1,477 @@
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+Bad Request: /Api/login/
+[15/Sep/2026 13:38:23] "POST /Api/login/ HTTP/1.1" 400 55
+[15/Sep/2026 13:39:57] "OPTIONS /Api/auth/register/ HTTP/1.1" 200 0
+Bad Request: /Api/auth/register/
+[15/Sep/2026 13:40:00] "POST /Api/auth/register/ HTTP/1.1" 400 46
+Internal Server Error: /Api/auth/register/
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\views.py", line 110, in post
+    serializer.save()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py", line 69, in create
+    with transaction.atomic():
+         ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\transaction.py", line 307, in __exit__
+    connection.set_autocommit(True)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\backends\base\base.py", line 491, in set_autocommit
+    self.run_and_clear_commit_hooks()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\backends\base\base.py", line 769, in run_and_clear_commit_hooks
+    func()
+    ~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py", line 92, in <lambda>
+    lambda: email_address.send_confirmation(request, signup=True)
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\models.py", line 113, in send_confirmation
+    confirmation.send(request, signup=signup)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\models.py", line 144, in send
+    get_adapter().send_confirmation_mail(request, self, signup)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\adapter.py", line 742, in send_confirmation_mail
+    self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\adapter.py", line 244, in send_mail
+    msg.send()
+    ~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\message.py", line 307, in send
+    return self.get_connection(fail_silently).send_messages([self])
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\backends\smtp.py", line 146, in send_messages
+    new_conn_created = self.open()
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\backends\smtp.py", line 101, in open
+    self._partial_connection.login(self.username, self.password)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 750, in login
+    raise last_exception
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 739, in login
+    (code, resp) = self.auth(
+                   ~~~~~~~~~^
+        authmethod, getattr(self, method_name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        initial_response_ok=initial_response_ok)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 662, in auth
+    raise SMTPAuthenticationError(code, resp)
+smtplib.SMTPAuthenticationError: (534, b'5.7.9 Please log in with your web browser and then try again. For more\n5.7.9 information, go to\n5.7.9  https://support.google.com/mail/?p=WebLoginRequired 586e51a60fabf-48429a91b9asm203108fac.6 - gsmtp')
+[15/Sep/2026 13:40:01] "POST /Api/auth/register/ HTTP/1.1" 500 184303
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:38:00
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:47:14
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:47:17
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\views.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:47:20
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\urls.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:47:39
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\signals.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:48:04
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\GenAI\urls.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:48:29
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\GenAI\settings.py changed, reloading.
+Performing system checks...
+
+September 15, 2026 - 13:49:19
+Django version 5.2.15, using settings 'GenAI.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+[2026-09-15 13:49:42,270] INFO django.utils.autoreload: Watching for file changes with StatReloader
+System check identified some issues:
+
+WARNINGS:
+?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
+?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+Api.Conversa: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Mensagem: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.ModeloIA: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+Api.Usuario: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+	HINT: Configure the DEFAULT_AUTO_FIELD setting or the ApiConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+
+System check identified 7 issues (0 silenced).
+[2026-09-15 13:52:30,745] ERROR django.request: Internal Server Error: /Api/auth/register/
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\views.py", line 215, in post
+    serializer.is_valid(raise_exception=True)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\serializers.py", line 233, in is_valid
+    raise ValidationError(self.errors)
+rest_framework.exceptions.ValidationError: {'email': [ErrorDetail(string='Este email já está cadastrado.', code='invalid')]}
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 183, in import_from_string
+    return import_string(val)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\utils\module_loading.py", line 30, in import_string
+    return cached_import(module_path, class_name)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\utils\module_loading.py", line 15, in cached_import
+    module = import_module(module_path)
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'Api.exception_handler'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 468, in handle_exception
+    exception_handler = self.get_exception_handler()
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 303, in get_exception_handler
+    return self.settings.EXCEPTION_HANDLER
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 231, in __getattr__
+    val = perform_import(val, attr)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 172, in perform_import
+    return import_from_string(val, setting_name)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 186, in import_from_string
+    raise ImportError(msg)
+ImportError: Could not import 'Api.exception_handler.custom_exception_handler' for API setting 'EXCEPTION_HANDLER'. ModuleNotFoundError: No module named 'Api.exception_handler'.
+[2026-09-15 13:52:30,788] ERROR django.server: "POST /Api/auth/register/ HTTP/1.1" 500 146751
+[2026-09-15 13:52:33,130] ERROR django.request: Internal Server Error: /Api/auth/register/
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\views.py", line 216, in post
+    serializer.save()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py", line 95, in create
+    with transaction.atomic():
+         ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\transaction.py", line 307, in __exit__
+    connection.set_autocommit(True)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\backends\base\base.py", line 491, in set_autocommit
+    self.run_and_clear_commit_hooks()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\db\backends\base\base.py", line 769, in run_and_clear_commit_hooks
+    func()
+    ~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\Backend\Api\serializers.py", line 118, in <lambda>
+    lambda: email_address.send_confirmation(request, signup=True)
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\models.py", line 113, in send_confirmation
+    confirmation.send(request, signup=signup)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\models.py", line 144, in send
+    get_adapter().send_confirmation_mail(request, self, signup)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\adapter.py", line 742, in send_confirmation_mail
+    self.send_mail(email_template, emailconfirmation.email_address.email, ctx)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\allauth\account\adapter.py", line 244, in send_mail
+    msg.send()
+    ~~~~~~~~^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\message.py", line 307, in send
+    return self.get_connection(fail_silently).send_messages([self])
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\backends\smtp.py", line 146, in send_messages
+    new_conn_created = self.open()
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\mail\backends\smtp.py", line 101, in open
+    self._partial_connection.login(self.username, self.password)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 750, in login
+    raise last_exception
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 739, in login
+    (code, resp) = self.auth(
+                   ~~~~~~~~~^
+        authmethod, getattr(self, method_name),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        initial_response_ok=initial_response_ok)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\smtplib.py", line 662, in auth
+    raise SMTPAuthenticationError(code, resp)
+smtplib.SMTPAuthenticationError: (534, b'5.7.9 Please log in with your web browser and then try again. For more\n5.7.9 information, go to\n5.7.9  https://support.google.com/mail/?p=WebLoginRequired ada2fe7eead31-79fb10493eesm215559137.5 - gsmtp')
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 183, in import_from_string
+    return import_string(val)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\utils\module_loading.py", line 30, in import_string
+    return cached_import(module_path, class_name)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\utils\module_loading.py", line 15, in cached_import
+    module = import_module(module_path)
+  File "C:\Users\rayane.campos_superl\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py", line 88, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'Api.exception_handler'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 468, in handle_exception
+    exception_handler = self.get_exception_handler()
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\views.py", line 303, in get_exception_handler
+    return self.settings.EXCEPTION_HANDLER
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 231, in __getattr__
+    val = perform_import(val, attr)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 172, in perform_import
+    return import_from_string(val, setting_name)
+  File "C:\Users\rayane.campos_superl\Desktop\assistente-ia-nextgen\venv\Lib\site-packages\rest_framework\settings.py", line 186, in import_from_string
+    raise ImportError(msg)
+ImportError: Could not import 'Api.exception_handler.custom_exception_handler' for API setting 'EXCEPTION_HANDLER'. ModuleNotFoundError: No module named 'Api.exception_handler'.
+[2026-09-15 13:52:33,146] ERROR django.server: "POST /Api/auth/register/ HTTP/1.1" 500 220194
+[2026-09-15 13:56:04,469] WARNING django.request: Bad Request: /Api/auth/register/
+[2026-09-15 13:56:04,470] WARNING django.server: "POST /Api/auth/register/ HTTP/1.1" 400 199
+[2026-09-15 13:58:54,458] INFO django.server: "GET /accounts/google/login/?process=connect HTTP/1.1" 302 0
+[2026-09-15 13:58:57,193] INFO django.server: "GET /accounts/google/login/callback/?state=YfGPvs0PLuFAt2n4&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0ATsMZqDdxaIChgbQbwKESVfzIeongYGE2E07cp23zNQItaZmITjeb-ugCQdD90tJRfdUpg&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=0&hd=superlogica.com&prompt=none HTTP/1.1" 302 0
+[2026-09-15 13:58:57,205] INFO django.server: "GET /accounts/3rdparty/ HTTP/1.1" 302 0
+[2026-09-15 13:58:57,330] INFO django.server: "GET /accounts/login/?next=/accounts/3rdparty/ HTTP/1.1" 200 2722
+[2026-09-15 13:58:57,374] WARNING django.request: Not Found: /favicon.ico
+[2026-09-15 13:58:57,375] WARNING django.server: "GET /favicon.ico HTTP/1.1" 404 3408

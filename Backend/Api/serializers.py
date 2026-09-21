@@ -1,11 +1,17 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 
-from allauth.account.models import EmailAddress
+from rest_framework import serializers
 
-from .models import Usuario, Conversa, Mensagem, ModeloIA
+from allauth.account.models import EmailAddress
+from allauth.account.utils import user_pk_to_url_str
+from dj_rest_auth.serializers import PasswordResetSerializer
+
+from .models import Conversa, Mensagem, ModeloIA, Usuario
+
+FRONTEND_URL = "http://localhost:5173"
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -13,6 +19,25 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = '__all__'
+
+
+class PerfilSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Usuario
+        fields = [
+            'id',
+            'nome',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
+        read_only_fields = [
+            'id',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -43,7 +68,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
 
-        validate_password(value)
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(
+                list(exc.messages)
+            )
 
         return value
 
@@ -63,7 +93,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         username = validated_data.pop('username')
         email = validated_data.pop('email')
         password = validated_data.pop('password')
-        nome = validated_data.pop('nome', username)
+        nome = validated_data.pop('nome')
 
         try:
             with transaction.atomic():
@@ -121,4 +151,19 @@ class MensagemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mensagem
         fields = '__all__'
-    
+
+
+def _frontend_password_reset_url_generator(request, user, temp_key):
+    """
+    Faz o e-mail de "esqueci minha senha" apontar para o React (que tem a
+    tela de redefinição) em vez da rota padrão do dj-rest-auth, que aponta
+    para o backend Django (sem template para renderizar).
+    """
+    uid = user_pk_to_url_str(user)
+    return f"{FRONTEND_URL}/redefinir-senha/{uid}/{temp_key}/"
+
+
+class CustomPasswordResetSerializer(PasswordResetSerializer):
+
+    def get_email_options(self):
+        return {'url_generator': _frontend_password_reset_url_generator}
