@@ -335,18 +335,6 @@ class LoginView(APIView):
 
         if user is not None:
 
-            email_verificado = EmailAddress.objects.filter(
-                user=user,
-                email__iexact=user.email,
-                verified=True
-            ).exists()
-
-            if not email_verificado:
-                return Response({
-                    "success": False,
-                    "message": "Confirme seu email antes de fazer login."
-                }, status=403)
-
             refresh = RefreshToken.for_user(user)
 
             usuario = Usuario.objects.filter(user=user).first()
