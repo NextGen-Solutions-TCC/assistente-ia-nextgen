@@ -4,6 +4,7 @@ import Welcome from './pages/Welcome';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ChatGeral from './pages/ChatGeral';
 import Error500 from './pages/Error500';
 import Error404 from './pages/Error404'; // Importe a nova tela
@@ -16,6 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/esqueci-senha" element={<ForgotPassword />} />
+        <Route path="/redefinir-senha/:uid/:token" element={<ResetPassword />} />
         <Route path="/chat" element={<ChatGeral />} />
 
         {/* Telas de Erro */}

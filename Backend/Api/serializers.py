@@ -1,10 +1,17 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 
-from .models import Usuario, Conversa, Mensagem, ModeloIA
+from rest_framework import serializers
+
+from allauth.account.models import EmailAddress
+from allauth.account.utils import user_pk_to_url_str
+from dj_rest_auth.serializers import PasswordResetSerializer
+
+from .models import Conversa, Mensagem, ModeloIA, Usuario
+
+FRONTEND_URL = "http://localhost:5173"
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -18,8 +25,19 @@ class PerfilSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'nome', 'email', 'tipo', 'data_criacao']
-        read_only_fields = ['id', 'email', 'tipo', 'data_criacao']
+        fields = [
+            'id',
+            'nome',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
+        read_only_fields = [
+            'id',
+            'email',
+            'tipo',
+            'data_criacao',
+        ]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -36,12 +54,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             'email',
             'password',
             'confirmar_password',
-            'nome'
+            'nome',
         ]
 
     def validate_email(self, value):
+        value = value.strip().lower()
 
-        if User.objects.filter(email=value).exists():
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError(
                 "Este email já está cadastrado."
             )
@@ -53,7 +72,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         try:
             validate_password(value)
         except DjangoValidationError as exc:
-            raise serializers.ValidationError(list(exc.messages))
+            raise serializers.ValidationError(
+                list(exc.messages)
+            )
 
         return value
 
@@ -77,6 +98,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         try:
             with transaction.atomic():
+
                 user = User.objects.create_user(
                     username=username,
                     email=email,
@@ -88,9 +110,23 @@ class RegisterSerializer(serializers.ModelSerializer):
                     nome=nome,
                     email=email
                 )
+
+                email_address = EmailAddress.objects.create(
+                    user=user,
+                    email=email,
+                    primary=True,
+                    verified=False
+                )
+
+                request = self.context.get('request')
+                transaction.on_commit(
+                    lambda: email_address.send_confirmation(request, signup=True)
+                )
+
         except IntegrityError:
             raise serializers.ValidationError(
-                "Não foi possível criar o usuário. Nome de usuário ou email já em uso."
+                "Não foi possível criar o usuário. "
+                "Nome de usuário ou email já em uso."
             )
 
         return usuario
@@ -108,7 +144,7 @@ class ConversaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversa
         fields = '__all__'
-        read_only_fields = ['Id_usuario']
+        read_only_fields = ['usuario']
 
 
 class MensagemSerializer(serializers.ModelSerializer):
@@ -116,4 +152,19 @@ class MensagemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mensagem
         fields = '__all__'
-    
+
+
+def _frontend_password_reset_url_generator(request, user, temp_key):
+    """
+    Faz o e-mail de "esqueci minha senha" apontar para o React (que tem a
+    tela de redefinição) em vez da rota padrão do dj-rest-auth, que aponta
+    para o backend Django (sem template para renderizar).
+    """
+    uid = user_pk_to_url_str(user)
+    return f"{FRONTEND_URL}/redefinir-senha/{uid}/{temp_key}/"
+
+
+class CustomPasswordResetSerializer(PasswordResetSerializer):
+
+    def get_email_options(self):
+        return {'url_generator': _frontend_password_reset_url_generator}

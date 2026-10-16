@@ -13,7 +13,8 @@ from .views import (
     ModeloIAViewSet,
     teste,
     LoginView,
-    google_login_redirect
+    google_login_redirect,
+    ChatbotView,
 )
 
 # Router principal
@@ -32,6 +33,7 @@ urlpatterns = [
 
     # Login
     path('login/', LoginView.as_view(), name='login'),
+    
 
     # Redirecionamento pós-login do Google (gera o JWT e manda pro front)
     path('social-redirect/', google_login_redirect, name='social_redirect'),
@@ -41,6 +43,7 @@ urlpatterns = [
 
     # Perfil protegido
     path('teste/', teste, name='teste'),
+    path('chatbot/', ChatbotView.as_view(), name='chatbot'),
 
     # Rotas automáticas do router
     path('', include(router.urls)),

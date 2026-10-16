@@ -39,7 +39,7 @@ assistente-ia-/
 ```bash
 cd Backend
 python -m venv .venv 
- .\.venv\Scripts\Activate
+.\.venv\Scripts\Activate
 pip install -r requirements.txt   # ~580 pacotes — demora na primeira vez
 python manage.py migrate
 python manage.py runserver        # http://127.0.0.1:8000
@@ -66,16 +66,22 @@ npm run lint
 
 ## Variáveis de ambiente
 
-As variáveis abaixo precisam existir no ambiente antes de rodar o backend. **Não há `.env` commitado no repo.**
+Configure o envio de e-mails copiando `Backend/.env.example` para `Backend/.env` e substituindo os valores de exemplo. Use uma **senha de app do Google**, não a senha normal da conta; o Gmail exige a verificação em duas etapas para gerar uma.
 
 | Variável | Onde usar | Observação |
 |---|---|---|
-| `GOOGLE_CLIENT_ID` | `GenAI/settings.py` | OAuth Google |
-| `GOOGLE_CLIENT_SECRET` | `GenAI/settings.py` | OAuth Google |
-| `LANGFLOW_API_KEY` | `Api/views.py` | Atualmente hardcoded — mover para env antes do deploy |
-| `LANGFLOW_FLOW_URL` | `Api/views.py` | URL do flow no Langflow — também hardcoded |
+| `EMAIL_HOST_USER` | `GenAI/settings.py` | Conta Gmail que enviará as confirmações |
+| `EMAIL_HOST_PASSWORD` | `GenAI/settings.py` | Senha de app do Gmail |
+| `SITE_ID` | `GenAI/settings.py` | ID do Site ligado à Social Application do Google (padrão: `1`) |
+| `LANGFLOW_BASE_URL` | `GenAI/settings.py` | URL base do servidor Langflow, por exemplo `http://localhost:7860` |
+| `LANGFLOW_FLOW_ID` | `GenAI/settings.py` | ID do flow que será executado |
+| `LANGFLOW_API_KEY` | `GenAI/settings.py` | Chave da API Langflow, se a instância exigir autenticação |
 
-> Prioridade: mover `LANGFLOW_API_KEY` e `LANGFLOW_FLOW_URL` para variáveis de ambiente antes de qualquer deploy.
+Sem credenciais SMTP, o backend em desenvolvimento imprime o link de confirmação no terminal em vez de enviá-lo ao Gmail. Com credenciais configuradas, o link é enviado por SMTP. A confirmação continua obrigatória para login manual.
+
+As credenciais OAuth do Google são cadastradas em **Social Applications** no Django Admin e precisam estar associadas ao Site cujo ID corresponde a `SITE_ID`. O callback OAuth local precisa estar autorizado no Google como `http://127.0.0.1:8000/accounts/google/login/callback/`.
+
+Sem `LANGFLOW_BASE_URL` e `LANGFLOW_FLOW_ID`, `/Api/chatbot/` retorna `503` e não remove a mensagem já salva no histórico. Configure essas variáveis no `Backend/.env` e reinicie o Django quando o flow estiver pronto.
 
 ## API endpoints
 
@@ -85,7 +91,7 @@ Todos os endpoints ficam sob o prefixo `/Api/`.
 |---|---|---|
 | `/Api/token/` | POST | Obter par de tokens JWT |
 | `/Api/token/refresh/` | POST | Renovar access token |
-| `/Api/register/` | POST | Cadastro de usuário |
+| `/Api/auth/register/` | POST | Cadastro de usuário |
 | `/Api/login/` | POST | Login |
 | `/Api/chatbot/` | POST | Enviar mensagem para o Langflow |
 | `/Api/usuario/` | GET / POST | CRUD de usuários |
@@ -94,6 +100,8 @@ Todos os endpoints ficam sob o prefixo `/Api/`.
 | `/Api/modeloAI/` | GET / POST | CRUD de modelos de IA |
 
 **Auth:** JWT com access token de 60 min e refresh de 1 dia. O Frontend anexa o token automaticamente via interceptor Axios.
+
+**Chatbot:** `POST /Api/chatbot/` requer JWT e recebe `conversation_id`, `message` e `context` (`geral`, `condominios` ou `imobiliarias`). O backend verifica a propriedade da conversa, envia o texto/contexto ao endpoint `/api/v1/run/{LANGFLOW_FLOW_ID}` do Langflow com um `session_id` estável por usuário e conversa, salva a resposta como mensagem do bot e retorna `message`, `conversation_id` e `message_id`.
 
 ## Rotas do Frontend
 
@@ -107,11 +115,11 @@ Todos os endpoints ficam sob o prefixo `/Api/`.
 
 ## Pontos críticos de integração
 
-**Langflow é obrigatório.** O endpoint `/Api/chatbot/` apenas faz proxy HTTP para o Langflow — se o Langflow estiver fora, o chatbot falha inteiramente. O flow exportado fica em `Backend/Fluxos/`.
+**Langflow é necessário para respostas da IA.** O endpoint `/Api/chatbot/` faz proxy HTTP para o Langflow. Se o serviço estiver fora, o backend devolve erro 502/504; a mensagem do usuário permanece salva no histórico. O identificador de sessão enviado ao flow permite que o componente de memória do Langflow mantenha o contexto da conversa.
 
-**Google OAuth** exige `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no ambiente. Sem eles, o login social não funciona mas o restante da API opera normalmente.
+**Google OAuth** exige uma Social Application do Google cadastrada no Django Admin e associada ao Site selecionado por `SITE_ID`.
 
-**Banco de dados:** SQLite em dev (`db.sqlite3`). Para produção, PostgreSQL é o caminho — não há migration scripts para isso ainda.
+**Banco de dados:** a configuração atual do backend usa MySQL. Para produção, reveja as credenciais e permissões configuradas em `GenAI/settings.py`.
 
 ## Modelos de dados
 

@@ -1,4 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db import transaction
+from django.conf import settings
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -21,6 +23,169 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
+
+from django.core import signing
+from allauth.account.models import EmailAddress, EmailConfirmationHMAC
+from allauth.account import app_settings as allauth_account_settings
+import logging
+import requests
+
+FRONTEND_URL = "http://localhost:5173"
+logger = logging.getLogger("Api")
+
+
+def _extract_langflow_message(payload):
+    for flow_output in payload.get('outputs', []):
+        for component_output in flow_output.get('outputs', []):
+            result_message = (
+                component_output.get('results', {}).get('message', {})
+            )
+            if isinstance(result_message, dict):
+                text = result_message.get('text')
+                if isinstance(text, str) and text.strip():
+                    return text.strip()
+
+            for message in component_output.get('messages', []):
+                if isinstance(message, dict):
+                    text = message.get('text') or message.get('message')
+                    if isinstance(text, str) and text.strip():
+                        return text.strip()
+
+            artifact_message = component_output.get(
+                'artifacts', {}
+            ).get('message')
+            if isinstance(artifact_message, str) and artifact_message.strip():
+                return artifact_message.strip()
+
+    return None
+
+#Nova view para lidar com a comunicação com o chatbot e histórico de conversas. Essa view é responsável por receber mensagens do usuário, validar a entrada, consultar a IA (Langflow) e retornar a resposta gerada. Além disso, ela garante que o usuário só possa interagir com suas próprias conversas e mensagens.
+class ChatbotView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        message = request.data.get('message')
+        conversation_id = request.data.get('conversation_id')
+        context = request.data.get('context', 'geral')
+
+        if not isinstance(message, str) or not message.strip():
+            return Response(
+                {'detail': 'A mensagem não pode ficar vazia.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            conversation_id = int(conversation_id)
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'Identificador de conversa inválido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        context_labels = {
+            'geral': 'Geral',
+            'condominios': 'Condomínios',
+            'imobiliarias': 'Imobiliárias',
+        }
+        if not isinstance(context, str) or context not in context_labels:
+            return Response(
+                {'detail': 'Contexto de conversa inválido.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        conversation = get_object_or_404(
+            Conversa,
+            pk=conversation_id,
+            usuario__user=request.user,
+        )
+        latest_user_message = Mensagem.objects.filter(
+            conversa=conversation,
+            remetente='user',
+        ).order_by('-data_envio', '-pk').first()
+        if latest_user_message is None or latest_user_message.texto != message.strip():
+            return Response(
+                {'detail': 'Salve a mensagem na conversa antes de consultar a IA.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not settings.LANGFLOW_BASE_URL or not settings.LANGFLOW_FLOW_ID:
+            return Response(
+                {'detail': 'A integração com a IA ainda não foi configurada.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        headers = {'Content-Type': 'application/json'}
+        if settings.LANGFLOW_API_KEY:
+            headers['x-api-key'] = settings.LANGFLOW_API_KEY
+
+        payload = {
+            'input_value': (
+                f"Contexto do produto: {context_labels[context]}.\n\n"
+                f"Mensagem do usuário: {message.strip()}"
+            ),
+            'input_type': 'chat',
+            'output_type': 'chat',
+            'session_id': f"user-{request.user.pk}-conversation-{conversation.pk}",
+        }
+
+        try:
+            response = requests.post(
+                f"{settings.LANGFLOW_BASE_URL}/api/v1/run/"
+                f"{settings.LANGFLOW_FLOW_ID}",
+                headers=headers,
+                json=payload,
+                timeout=30,
+            )
+            response.raise_for_status()
+            answer = _extract_langflow_message(response.json())
+        except requests.Timeout:
+            logger.warning(
+                'Timeout ao consultar Langflow para a conversa %s.',
+                conversation.pk,
+            )
+            return Response(
+                {'detail': 'A IA demorou para responder. Tente novamente.'},
+                status=status.HTTP_504_GATEWAY_TIMEOUT,
+            )
+        except requests.RequestException:
+            logger.exception(
+                'Falha na chamada ao Langflow para a conversa %s.',
+                conversation.pk,
+            )
+            return Response(
+                {'detail': 'Não foi possível consultar a IA no momento.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except (ValueError, AttributeError, TypeError):
+            logger.exception(
+                'Resposta inválida do Langflow para a conversa %s.',
+                conversation.pk,
+            )
+            return Response(
+                {'detail': 'A IA retornou uma resposta inválida.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if not answer:
+            logger.error(
+                'A resposta do Langflow não continha texto para a conversa %s.',
+                conversation.pk,
+            )
+            return Response(
+                {'detail': 'A IA não retornou uma resposta em texto.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        bot_message = Mensagem.objects.create(
+            conversa=conversation,
+            remetente='bot',
+            texto=answer,
+        )
+        return Response({
+            'message': answer,
+            'conversation_id': conversation.pk,
+            'message_id': bot_message.pk,
+        })
 
 @receiver(user_logged_in)
 def sinal_login_sucesso(sender, request, user, **kwargs):
@@ -54,6 +219,7 @@ class UsuarioViewSet(ModelViewSet): # viewset serve para criar as rotas automati
  
     filter_backends = [DjangoFilterBackend]
     filterset_class = UsuarioFilter
+    
  
     def get_queryset(self): # def get_queryset(self) é um método que pode ser sobrescrito para personalizar a queryset retornada pelo viewset. No caso do usuário, queremos retornar apenas os dados do usuário logado, a menos que o usuário seja um superusuário (staff), nesse caso, ele pode ver todos os usuários.
         qs = super().get_queryset() # chama o método get_queryset() da classe pai (ModelViewSet) para obter a queryset padrão, que é definida como Usuario.objects.all(). Em seguida, verificamos se o usuário logado é um superusuário (staff). Se for, retornamos a queryset completa, permitindo que ele veja todos os usuários. Caso contrário, filtramos a queryset para retornar apenas o usuário logado, usando qs.filter(user=self.request.user). Isso garante que um usuário comum só possa acessar seus próprios dados, enquanto um superusuário pode acessar os dados de todos os usuários.
@@ -203,7 +369,7 @@ class RegisterView(APIView):
 
     def post(self, request):
 
-        serializer = RegisterSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data, context={'request': request})
 
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -219,9 +385,7 @@ class MensagemViewSet(ModelViewSet):
     queryset = Mensagem.objects.all()
     serializer_class = MensagemSerializer
     permission_classes = [IsAuthenticated]
-    
-    # Diferente do modelo de IA, aqui o filtro é essencial para buscar 
-    # as mensagens de uma conversa específica (ex: ?conversa=1)
+
     filter_backends = [DjangoFilterBackend]
     filterset_class = MensagemFilter
 
@@ -230,11 +394,13 @@ class MensagemViewSet(ModelViewSet):
         
         # Se for staff, tem visão total (auditoria)
         if self.request.user.is_staff:
-            return qs
+            return qs.order_by('data_envio', 'pk')
             
         # Filtra as mensagens através da relação com a conversa e o usuário
-        # "conversa_usuario_user" segue o caminho: Mensagem -> Conversa -> Usuario -> User
-        return qs.filter(conversa_usuario_user=self.request.user)
+        # Relacionamento: Mensagem -> Conversa -> Usuario -> User
+        return qs.filter(
+            conversa__usuario__user=self.request.user
+        ).order_by('data_envio', 'pk')
 
     def perform_create(self, serializer):
     
@@ -267,12 +433,73 @@ class ConversaViewSet(ModelViewSet):
         
         # Se for administrador da empresa (staff), retorna todas as conversas
         if self.request.user.is_staff:
-            return qs
+            return qs.order_by('-pk')
         
         # Se for usuário comum, filtra para retornar apenas as conversas 
         # vinculadas ao perfil do usuário logado.
         # (Considerando que na sua model Conversa existe um campo FK chamado 'usuario')
-        return qs.filter(usuario__user=self.request.user)
+        return qs.filter(usuario__user=self.request.user).order_by('-pk')
+
+    @action(
+        detail=False,
+        methods=['post'],
+        url_path='enviar',
+        permission_classes=[IsAuthenticated],
+    )
+    def enviar(self, request):
+        texto = request.data.get('texto')
+        if not isinstance(texto, str) or not texto.strip():
+            return Response(
+                {'detail': 'A mensagem não pode ficar vazia.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            usuario_perfil = Usuario.objects.get(user=request.user)
+        except Usuario.DoesNotExist:
+            return Response(
+                {'detail': 'Perfil de usuário não encontrado.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        conversa_id = request.data.get('conversa')
+        with transaction.atomic():
+            if conversa_id is None:
+                conversa = Conversa.objects.create(
+                    usuario=usuario_perfil,
+                    titulo=texto.strip()[:150],
+                )
+            else:
+                try:
+                    conversa_id = int(conversa_id)
+                except (TypeError, ValueError):
+                    return Response(
+                        {'detail': 'Identificador de conversa inválido.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                conversa = get_object_or_404(
+                    Conversa,
+                    pk=conversa_id,
+                    usuario=usuario_perfil,
+                )
+
+            mensagem = Mensagem.objects.create(
+                conversa=conversa,
+                remetente='user',
+                texto=texto.strip(),
+            )
+
+        return Response(
+            {
+                'conversa': {
+                    'id': conversa.id,
+                    'titulo': conversa.titulo,
+                },
+                'mensagem': MensagemSerializer(mensagem).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     def perform_create(self, serializer):
 
@@ -313,20 +540,52 @@ class ModeloIAViewSet(ModelViewSet):
     
 
 class LoginView(APIView):
- 
-    permission_classes = [AllowAny] # Permite que qualquer pessoa acesse a rota de login, mesmo sem estar autenticada. Isso é necessário porque o login é a porta de entrada para obter o token JWT, e se colocássemos IsAuthenticated aqui, ninguém conseguiria logar, já que não teriam um token válido ainda.
- 
+
+    permission_classes = [AllowAny]
+
     def post(self, request):
- 
+
         email = request.data.get("email")
         password = request.data.get("password")
- 
-        user = authenticate(
-            username=email,
-            password=password
+
+        if not isinstance(email, str) or not isinstance(password, str):
+            return Response({
+                "success": False,
+                "message": "Email ou senha inválidos"
+            }, status=400)
+
+        email = email.strip()
+        matching_users = list(
+            get_user_model().objects.filter(email__iexact=email)[:2]
         )
- 
+
+        if len(matching_users) > 1:
+            user = None
+        else:
+            username = (
+                matching_users[0].get_username()
+                if matching_users
+                else email
+            )
+            user = authenticate(
+                request=request,
+                username=username,
+                password=password
+            )
+
         if user is not None:
+
+            email_confirmado = (
+                user.is_staff
+                or user.is_superuser
+                or EmailAddress.objects.filter(user=user, verified=True).exists()
+            )
+
+            if not email_confirmado:
+                return Response({
+                    "success": False,
+                    "message": "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada."
+                }, status=400)
 
             refresh = RefreshToken.for_user(user)
 
@@ -340,12 +599,11 @@ class LoginView(APIView):
                 "nome": nome,
                 "message": "Login realizado com sucesso"
             })
- 
+
         return Response({
             "success": False,
             "message": "Email ou senha inválidos"
         }, status=400)
-
 
 @login_required
 def google_login_redirect(request):
@@ -382,11 +640,41 @@ def google_login_redirect(request):
         return redirect("http://localhost:5173/login?erro=google_login_falhou")
 
 
+def confirmar_email(request, key):
+    """
+    Substitui a tela padrão (e feia) do allauth para confirmação de e-mail.
+    Confirma o e-mail nos bastidores e redireciona direto para o React,
+    que decide o que mostrar com base no parâmetro `email_confirmado`.
+    """
+    confirmation = EmailConfirmationHMAC.from_key(key)
+
+    if confirmation:
+        confirmation.confirm(request)
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=1")
+
+    # Se a key não bate mais com um EmailAddress "verified=False", pode ser
+    # porque já foi confirmada antes (link clicado de novo) ou porque expirou/é inválida.
+    try:
+        max_age = 60 * 60 * 24 * allauth_account_settings.EMAIL_CONFIRMATION_EXPIRE_DAYS
+        pk = signing.loads(key, max_age=max_age, salt=allauth_account_settings.SALT)
+        email_address = EmailAddress.objects.filter(pk=pk).first()
+    except signing.SignatureExpired:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=expirado")
+    except signing.BadSignature:
+        email_address = None
+
+    if email_address and email_address.verified:
+        return redirect(f"{FRONTEND_URL}/login?email_confirmado=ja_confirmado")
+
+    return redirect(f"{FRONTEND_URL}/login?email_confirmado=invalido")
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) # Exige o Token JWT enviado pelo React
 def obter_usuario_atual(request):
+    usuario = Usuario.objects.filter(user=request.user).first()
     return Response({
         "username": request.user.username,
         "email": request.user.email,
-        "nome": getattr(request.user, 'nome', request.user.first_name) # Pega o nome salvo
+        "nome": usuario.nome if usuario else request.user.first_name
     })

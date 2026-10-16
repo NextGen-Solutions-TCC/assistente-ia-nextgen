@@ -1,17 +1,27 @@
 from pathlib import Path
 from datetime import timedelta
+import os
 import json
-from urllib.request import urlopen
 
-import Api
+from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = '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' # retirar depois
+load_dotenv(BASE_DIR / '.env')
+
+SECRET_KEY = 'SUA_NOVA_SECRET_KEY'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1',
+    ).split(',')
+    if host.strip()
+]
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -26,7 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'Api',
-    "corsheaders",
+    'corsheaders',
     'rest_framework_simplejwt',
     'django_filters',
     'django.contrib.messages',
@@ -39,7 +49,15 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
 ]
 
-SITE_ID = 1
+SITE_ID = int(os.getenv('SITE_ID', '1'))
+
+LANGFLOW_BASE_URL = os.getenv('LANGFLOW_BASE_URL', '').rstrip('/')
+LANGFLOW_FLOW_ID = os.getenv('LANGFLOW_FLOW_ID', '').strip()
+LANGFLOW_API_KEY = os.getenv('LANGFLOW_API_KEY', '').strip()
+
+REST_AUTH = {
+    'PASSWORD_RESET_SERIALIZER': 'Api.serializers.CustomPasswordResetSerializer',
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -49,7 +67,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
-    'EXCEPTION_HANDLER': 'Api.exception_handler.custom_exception_handler'
+    'EXCEPTION_HANDLER': 'Api.exception_handler.custom_exception_handler',
 }
 
 LOGGING = {
@@ -86,8 +104,8 @@ LOGGING = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 MIDDLEWARE = [
@@ -128,18 +146,34 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'genia',
-        'USER': 'genia_tcc',
+        'USER': 'root',
         'PASSWORD': 'root',
-        'HOST': '10.55.9.217',
+        'HOST': 'localhost',
         'PORT': '3306',
     }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'MinimumLengthValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'CommonPasswordValidator',
+    },
+    {
+        'NAME':
+            'django.contrib.auth.password_validation.'
+            'NumericPasswordValidator',
+    },
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -150,14 +184,36 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST_USER = 'seu_email_do_projeto@gmail.com'
-EMAIL_HOST_PASSWORD = 'aquela_senha_de_16_letras_que_o_google_gera'
-DEFAULT_FROM_EMAIL = 'GenIA <seu_email_do_projeto@gmail.com>'
+
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 10
+
+EMAIL_HOST_USER = (os.getenv('EMAIL_HOST_USER') or '').strip()
+EMAIL_HOST_PASSWORD = (os.getenv('EMAIL_HOST_PASSWORD') or '').strip()
+
+if bool(EMAIL_HOST_USER) != bool(EMAIL_HOST_PASSWORD):
+    raise ImproperlyConfigured(
+        'Configure EMAIL_HOST_USER e EMAIL_HOST_PASSWORD juntos.'
+    )
+
+if EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+elif DEBUG:
+    # In development, print confirmation links to the backend console.
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'noreply@localhost'
+else:
+    raise ImproperlyConfigured(
+        'Configure EMAIL_HOST_USER e EMAIL_HOST_PASSWORD para enviar e-mails.'
+    )
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -167,17 +223,19 @@ SOCIALACCOUNT_ADAPTER = 'Api.adapters.CustomSocialAccountAdapter'
 # Força o login direto sem passar por telas de confirmação adicionais
 SOCIALACCOUNT_FORCE_SIGNUP = False
 
-# Garante que o Django use o e-mail do Google para encontrar um usuário existente
+# Garante que o Django use o e-mail do Google
+# para encontrar um usuário existente
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True #Arrumar email duplicado
-ACCOUNT_USERNAME_REQUIRED = False
 
-# Após o Google confirmar o login, cai nessa view (gera o JWT e só então manda pro front)
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+
+
+# Após o Google confirmar o login, cai nessa view
+# (gera o JWT e só então manda para o frontend)
 LOGIN_REDIRECT_URL = 'http://127.0.0.1:8000/Api/social-redirect/'
+
 LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
-
-
-

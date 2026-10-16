@@ -11,7 +11,7 @@ class UsuarioFilter(django_filters.FilterSet):
 
 class MensagemFilter(django_filters.FilterSet):
     texto = django_filters.CharFilter(field_name='texto', lookup_expr='icontains')
-    conversa = django_filters.NumberFilter(field_name='conversa_id') # Essencial para carregar mensagens de um chat específico
+    conversa = django_filters.NumberFilter(field_name='conversa_id') # Essencial para carregar mensagens de um chat
 
     class Meta:
         model = Mensagem
@@ -19,10 +19,10 @@ class MensagemFilter(django_filters.FilterSet):
  
 class ConversaFilter(django_filters.FilterSet):
     titulo = django_filters.CharFilter(field_name='titulo', lookup_expr='icontains')
-    data_criacao = django_filters.DateFilter(field_name='data_criacao', lookup_expr='gte') # Exemplo: conversas a partir de tal data
+    data_criacao = django_filters.DateFilter(field_name='data_criacao', lookup_expr='gte') # SERVE para filtrar conversas criadas a partir de uma data específica
 
     class Meta:
-        model = Conversa  # Corrigido de Contrato para Conversa
+        model = Conversa 
         fields = ['titulo']
  
 class ModeloIAFilter(django_filters.FilterSet):

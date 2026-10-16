@@ -37,7 +37,7 @@ class Mensagem(models.Model):
     conversa = models.ForeignKey(Conversa, on_delete=models.CASCADE)
     modelo = models.ForeignKey(ModeloIA, on_delete=models.SET_NULL, null=True)
     
-    remetente = models.CharField(max_length=50) # Ex: 'user' ou 'ai'
+    remetente = models.CharField(max_length=50) 
     texto = models.TextField()
     data_envio = models.DateTimeField(auto_now_add=True)
 
